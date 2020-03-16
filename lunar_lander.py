@@ -1,6 +1,7 @@
 import gym
+import numpy as np
 from dqn import Agent
-from utils import plotLearning
+#from utils import plotLearning
 #from gym import wrappers
 
 if __name__ == '__main__':
@@ -37,8 +38,8 @@ if __name__ == '__main__':
             agent.learn()
 
         scores.append(score)
-        ep_history.append(agent.epsilon)
+        eps_history.append(agent.epsilon)
 
     x = [i+1 for i in range(n_games)]
-    plotLearning(x, scores, eps_history, filename)
+    #plotLearning(x, scores, eps_history, filename)
 
