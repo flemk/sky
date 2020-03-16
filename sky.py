@@ -85,7 +85,6 @@ def check_intersections(dancer, lines):
     # -----------------------------
     # Helper-functions for clarity.
     # -----------------------------
-    sign = lambda x: copysign(1, x)
     line = lambda x_0, y_0, x_1, y_1: ("v2i", (x_0, y_0, x_1, y_1))
     
     # -----------------------
@@ -118,8 +117,8 @@ def check_intersections(dancer, lines):
                 pyglet.graphics.draw(1, pyglet.gl.GL_POINTS,
                                      ('v2i', (int(p), int(q))),
                                      ('c3B', (255, 0, 0)))
-            #print(p,q)
-            #    dancer.score -= 10 #ToDo: Make variable
+                print('Intersection at', p, q)
+                dancer.score -= 10 #ToDo: Make variable
             i += 1
         j += 1
 
