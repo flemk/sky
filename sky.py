@@ -32,36 +32,27 @@ class Dancer:
         self.sprite.draw()
 
     def border(self):
-        '''[(self.sprite.x, self.sprite.y), (self.sprite.x, self.sprite.y + self.sprite.height)],
+        border = [[(self.sprite.x, self.sprite.y), (self.sprite.x, self.sprite.y + self.sprite.height)],
             [(self.sprite.x, self.sprite.y + self.sprite.height),(self.sprite.x + self.sprite.width, self.sprite.y + self.sprite.height)],
             [(self.sprite.x + self.sprite.width, self.sprite.y), (self.sprite.x + self.sprite.width, self.sprite.y + self.sprite.height)],
-            [(self.sprite.x, self.sprite.y), (self.sprite.x + self.sprite.width, self.sprite.y)],'''
-        border = [
+            [(self.sprite.x, self.sprite.y), (self.sprite.x + self.sprite.width, self.sprite.y)],
             
             [(self.sprite.x-100, self.sprite.y-50), (self.sprite.x, self.sprite.y+self.sprite.height//2)], #Sichtlinien
-            ]
-        '''[(self.sprite.x-100, self.sprite.y-25), (self.sprite.x, self.sprite.y+self.sprite.height//2)],
+            [(self.sprite.x-100, self.sprite.y-25), (self.sprite.x, self.sprite.y+self.sprite.height//2)],
             [(self.sprite.x-100, self.sprite.y+self.sprite.height//2), (self.sprite.x, self.sprite.y+self.sprite.height//2)],
             [(self.sprite.x-100, self.sprite.y+self.sprite.height+25), (self.sprite.x, self.sprite.y+self.sprite.height//2)],
-            [(self.sprite.x-100, self.sprite.y+self.sprite.height+50), (self.sprite.x, self.sprite.y+self.sprite.height//2)]]'''
-        return border
-        
+            [(self.sprite.x-100, self.sprite.y+self.sprite.height+50), (self.sprite.x, self.sprite.y+self.sprite.height//2)]]
+
+        return border        
 
 @window.event
 def on_draw():
-    window.clear();
+    window.clear()
     [dancer.update() for dancer in dancers]
     
     # --------------------
     # Drawing a rectangle.
     # --------------------
-    '''lines = [[(100, 100), (200, 100)],
-             [(200, 100), (200, 200)],
-             [(100, 200), (200, 200)],
-             [(100, 100), (100, 200)],
-
-             [(150, 100), (550, 800)],
-             [(100, 400), (800, 200)]]'''
     lines = [[(100, 400), (700, 300)],
              [(50, 100), (100, 400)],
              [(700, 300), (650, 000)],
@@ -75,10 +66,6 @@ def on_draw():
              [(300, 150), (310, 150)],
              [(300, 100), (310, 100)]
              ]
-    # DEBUG --start
-    lines = [[(50, 100), (100, 400)],
-             [(45, 100), (95, 400)]]
-    # DEBUG --end
     
     line = lambda x_0, y_0, x_1, y_1: ("v2i", (x_0, y_0, x_1, y_1))
     [pyglet.graphics.draw(2,pyglet.gl.GL_LINES,
@@ -98,7 +85,6 @@ def check_intersections(dancer, lines):
     # -----------------------------
     # Helper-functions for clarity.
     # -----------------------------
-    sign = lambda x: copysign(1, x)
     line = lambda x_0, y_0, x_1, y_1: ("v2i", (x_0, y_0, x_1, y_1))
     
     # -----------------------
@@ -123,17 +109,16 @@ def check_intersections(dancer, lines):
         i = 0
         for rect in rectl:
             p, q = intersect(line, rect)
-            if (rect[0][0] <= p <= rect[1][0]
-                and rect[0][1] <= q <= rect[1][1]
+            if ((rect[0][0] <= p <= rect[1][0] or rect[0][0] >= p >= rect[1][0])
+                and (rect[0][1] <= q <= rect[1][1] or rect[0][1] >= q >= rect[1][1])
                 and (line[0][0] <= p <= line[1][0] or line[0][0] >= p >= line[1][0])
                 and (line[0][1] <= q <= line[1][1] or line[0][1] >= q >= line[1][1])
                 ):
-                pass
-            pyglet.graphics.draw(1, pyglet.gl.GL_POINTS,
+                pyglet.graphics.draw(1, pyglet.gl.GL_POINTS,
                                      ('v2i', (int(p), int(q))),
                                      ('c3B', (255, 0, 0)))
-            print(p,q)
-            #    dancer.score -= 10 #ToDo: Make variable
+                print('Intersection at', p, q)
+                dancer.score -= 10 #ToDo: Make variable
             i += 1
         j += 1
 
@@ -165,18 +150,29 @@ def intersect(line_a, line_b):
         m_b = dyb/dxb
     c_b = line_b[0][1]
 
-    a = lambda x: m_a * (x - line_a[0][0]) + c_a
-    b = lambda x: m_b * (x - line_b[0][0]) + c_b
-    print('a(x) =', m_a, '* x +', c_a)
-    print('b(x) =', m_b, '* x +', c_b) 
+    if (dxb == 0 or dyb == 0):
+        '''
+        Case distinction between m_b == 0 and m_b != 0
+        Two different forms of calculation
+        
+        ToDo: below calculation can be moved inside this if-clause
+        '''
+        a = lambda x: m_a * x + c_a
+        b = lambda x: m_b * x + c_b
+    else:
+        a = lambda x: m_a * (x - line_a[0][0]) + c_a
+        b = lambda x: m_b * (x - line_b[0][0]) + c_b
+        o = (-c_a + line_a[0][0] * m_a + c_b - line_b[0][0] * m_b)/(m_a - m_b)
+        result = (o, b(o))
+        return result
+        
     if (v_f_b):
         result = (v_f_b, a(v_f_b - line_a[0][0]))
     elif (v_f_a):
         result = (v_f_a, b(v_f_a))
     elif (m_a != m_b):
         o = ((c_b - c_a)/(m_a - m_b))
-        print('o: ', o)
-        result = (o + line_a[0][0], b(o + line_a[0][0]))
+        result = (o + line_a[0][0], b(o))
     else:
         result = (False, False)
     return result
