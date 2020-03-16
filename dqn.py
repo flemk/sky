@@ -12,21 +12,21 @@ class DeepQNetwork(object):
         self.fc2_dims = fc2_dims
         self.chkpt_dir = chkpt_dir
         self.input_dims = input_dims
-        self.sess = tf.Session()
+        self.sess = tf.compat.v1.Session()
         self.build_network()
         self.sess.run(tf.global_variables_initializer())
         self.saver = tf.train.Saver()
         self.checkpoint_file = os.path.join(chkpt_dir, 'deepqnet.ckpt')
 
     def build_network(self):
-        with tf.variable_scope(self.name):
-            self.input = tf.placeholder(tf.float32,
+        with tf.compat.v1.variable_scope(self.name):
+            self.input = tf.compat.v1.placeholder(tf.float32,
                                         shape=[None, *self.input_dims],
                                         name='inputs')
-            self.actions = tf.placeholder(tf.float32,
+            self.actions = tf.compat.v1.placeholder(tf.float32,
                                           shape=[None, self.n_actions],
-                                          name='actions taken')
-            self.q_target = tf.placeholder(tf.float32,
+                                          name='actions_taken')
+            self.q_target = tf.compat.v1.placeholder(tf.float32,
                                            shape=[None, self.n_actions],
                                            name='q_value')
             flat = tf.layers.flatten(self.input)
@@ -111,7 +111,7 @@ class Agent(object):
 
             q_target = q_eval.copy()
 
-            batch_index = np.arrange(self.batch_size, dtype=np.int32)
+            batch_index = np.arange(self.batch_size, dtype=np.int32)
             q_target[batch_index, action_indices] = reward_batch + \
                                 self.gamma*np.max(q_next, axis=1)*terminal_batch
 
