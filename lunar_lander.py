@@ -1,6 +1,6 @@
 import gym
-from dqn import Agent
 import numpy as np
+from dqn import Agent
 #from utils import plotLearning
 #from gym import wrappers
 
