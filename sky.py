@@ -7,12 +7,12 @@ class Ground:
     def __init__(self):
         pass
 
-    def potential(self):
+    def potential(self, x, y):
         '''
         Returning the potential (aka. the score)
         The higher the potential -> the closer the target
         '''
-        pass
+        return 700 - x
 
     def border(self):
         '''
@@ -52,10 +52,7 @@ class Dancer:
         self.height = height
         self.v = int(v)
         self.score = 0
-        
-        image = pyglet.image.load('C://Users/franz/Pictures/Saved Pictures/rdot.png')
-        self.sprite = pyglet.sprite.Sprite(image, x, y)
-        self.sprite.scale = 0.05
+        self.potential_history = []
 
     def border(self):
         #Grenzen des Dancers: Wenn intersection mit diesen: Game over
@@ -81,7 +78,8 @@ class Dancer:
         [1] Calculating intersections of dancer.border with ground.border and ground.target
             [1.a] Determinig wether Dancer is in target-area or not (done-flag)
         [2] Calculating intersections of dancer.view with ground.border and ground.target
-        [3] Returning Intersections from [1] & [2] with done-flag and coordinates of target-area
+        [3] Calculating reward (self.score)
+        [4] Returning Intersections from [1], [2] & [3] with done-flag and coordinates of the dancer
         '''
         #Returning intersections of border, intersections of Sichtlinien, x/y-coordinates
         border_intersections = []
@@ -100,7 +98,7 @@ class Dancer:
                     and (g_line[0][1] <= q <= g_line[1][1] or g_line[0][1] >= q >= g_line[1][1])
                 ):
                     #print('line-intersection with border at:', p, q)
-                    self.score -= 10 #ToDo: Make variable
+                    self.score -= 100 #ToDo: Make variable
                     done = True
                     border_intersections.append((p,q))
             for g_line in ground_target:
@@ -135,37 +133,36 @@ class Dancer:
                     #print('view-intersection with Target-area at:', p, q)
                     view_intersections.append((p,q))
 
-        #[?] ToDo: Maybe add coordinates of self.ground.target to return-statement?
         #[3]
-        return [view_intersections, border_intersections, self.border()]
+        self.score += self.potential - self.potential_
 
-    def gui_update(self):
-        '''
-        Function is deprecated and will be removed in future versions
-
-        Update-function for use with pyglet GUI
-        Updates sprite-coordinates and runs normal self.update
-        '''
-        self.sprite.x = int(self.x)
-        self.sprite.y = int(self.y)
-        self.sprite.draw()
-
-        return self.update()
+        #[?] ToDo: Maybe add coordinates of self.ground.target to return-statement?
+        #[4]
+        return [view_intersections, border_intersections, self.score, self.border(), done]
 
     def event(self, action):
         '''
         Applying the action and updation the dancer
         '''
+        self.potential_ = self.ground.potential(self.x, self.y)
+        self.potential_history.append(self.potential_)
+
         if (action == 0):
-            pass
+            #UP
+            self.y += self.v
         elif (action == 1):
-            pass
+            #DOWN
+            self.y -= self.v
         elif (action == 2):
-            pass
+            #LEFT
+            self.x -= self.v
         elif (action == 3):
-            pass
+            #RIGHT
+            self.x += self.v
         else:
             pass
+
+        self.potential = self.ground.potential(self.x, self.y)
 
         return self.update()
 
@@ -238,12 +235,12 @@ xi = [0, 400]
 yi = [0, 400]
 v_initial = 10
 n = 1
-width = 25  # only for dancer.sprite.scale = 0.05
-height = 25 # only for dancer.sprite.scale = 0.05
+width = 25
+height = 25
 
-# -----------------------------------------------
-# Creating n dancer on different starting-points.
-# -----------------------------------------------
+# ------------------------------------------------
+# Creating n-dancers on different starting-points.
+# ------------------------------------------------
 dancers = []
 ground = Ground()
 for i in range(n):
@@ -253,107 +250,3 @@ for i in range(n):
                         width=width, 
                         height=height, 
                         v=v_initial))
-
-# -------------------------------------------------------------
-# Run pyglet graphical representation, if pyglet_enable is set.
-# -------------------------------------------------------------
-if (pyglet_enable):
-    window = pyglet.window.Window(width=800, height=400)
-    #pyglet.gl.glClearColor(255,255,255,1)
-
-    @window.event
-    def on_key_press(key, modifiers):
-        '''
-        Function is deprecated and will be removed in future versions.
-        
-        Keys represent joystick for dancers
-        '''
-        for dancer in dancers:
-            if (key == pyglet.window.key.UP):
-                dancer.y += dancer.v
-            elif (key == pyglet.window.key.DOWN):
-                dancer.y -= dancer.v
-            elif (key == pyglet.window.key.LEFT):
-                dancer.x -= dancer.v
-            elif (key == pyglet.window.key.RIGHT):
-                dancer.x += dancer.v
-            else:
-                pass
-    
-    @window.event
-    def on_draw():
-        '''
-        Function is deprecated and will be removed in future versions.
-        '''
-        window.clear()
-
-        # ---------------------------
-        # Updating every dancer once.
-        # ---------------------------
-        [dancer.gui_update() for dancer in dancers]
-
-        # ------------------------------------------
-        # Receiving the border-lines from the ground
-        # and draw them on pyglet canvas (optional).
-        # ------------------------------------------
-        lines = ground.border()
-        [lines.append(el) for el in ground.target()]
-    
-        line = lambda x_0, y_0, x_1, y_1: ("v2i", (x_0, y_0, x_1, y_1))
-        [pyglet.graphics.draw(2,pyglet.gl.GL_LINES,
-                              line(lines[0][0],
-                                   lines[0][1],
-                                   lines[1][0],
-                                   lines[1][1]),
-                              ('c4B', (0, 0, 255, 255, 0, 0, 255, 255)) )
-        for lines in lines]
-
-        # ----------------------------------
-        # Checking intersection with dancer.
-        # ----------------------------------
-        #[check_intersections(dancer, lines) for dancer in dancers]
-
-    def check_intersections(dancer, lines):  
-        '''
-        Function is deprecated and will be removed in future versions.
-        '''
-        # -----------------------
-        # Drawing Dancers border.
-        # -----------------------
-        rectl = dancer.border()
-        line = lambda x_0, y_0, x_1, y_1: ("v2i", (x_0, y_0, x_1, y_1))
-        [pyglet.graphics.draw(2,pyglet.gl.GL_LINES,
-                              line(lines[0][0],
-                                   lines[0][1],
-                                   lines[1][0],
-                                   lines[1][1]),
-                               ('c4B', (0, 255, 0, 255, 0, 255, 0, 255)) )
-        for lines in rectl]
-
-        # -------------------------------------
-        # Check, if there are any intersections
-        # betwen the outlines of the dancer and
-        # the border.
-        # -------------------------------------
-        j = 0
-        for line in lines:
-            i = 0
-            for rect in rectl:
-                p, q = intersect(line, rect)
-                if ((rect[0][0] <= p <= rect[1][0] or rect[0][0] >= p >= rect[1][0])
-                    and (rect[0][1] <= q <= rect[1][1] or rect[0][1] >= q >= rect[1][1])
-                    and (line[0][0] <= p <= line[1][0] or line[0][0] >= p >= line[1][0])
-                    and (line[0][1] <= q <= line[1][1] or line[0][1] >= q >= line[1][1])
-                    ):
-                    pyglet.graphics.draw(1, pyglet.gl.GL_POINTS,
-                                         ('v2i', (int(p), int(q))),
-                                         ('c3B', (255, 0, 0)))
-                    #print('Intersection at', p, q)
-                    dancer.score -= 10 #ToDo: Make variable
-                i += 1
-            j += 1
-
-    pyglet.app.run()
-else:
-    pass
-
