@@ -30,7 +30,7 @@ if __name__ == '__main__':
         score = 0
         while not done:
             '''
-            one game: ending, when flag=True
+            one game: ending, when done=True
             '''
             action = agent.choose_action(observation)
             observation_, reward, done, info = env.step(action)
