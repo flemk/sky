@@ -50,6 +50,8 @@ class Dancer:
         self.height = height
         self.v = int(v)
         self.score = 0
+        self.potential = 0
+        self.potential_ = 0
         self.potential_history = []
 
     def border(self):
