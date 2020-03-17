@@ -1,5 +1,3 @@
-import pyglet
-from pyglet.window import key
 from math import copysign
 from random import uniform
 
