@@ -29,6 +29,9 @@ if __name__ == '__main__':
         observation = env.reset()
         score = 0
         while not done:
+            '''
+            one game: ending, when flag=True
+            '''
             action = agent.choose_action(observation)
             observation_, reward, done, info = env.step(action)
             score += reward
