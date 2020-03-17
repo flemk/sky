@@ -1,17 +1,18 @@
-import gym
 import numpy as np
 from dqn import Agent
+import sky
 #from utils import plotLearning
-#from gym import wrappers
 
 if __name__ == '__main__':
-    env = gym.make('LunarLander-v2')
+    env = sky.make()
+
     lr = 0.0005
     n_games = 100
+    #ToDo: input_dims
     agent = Agent(gamma=0.99, epsilon=1.0, lr=lr, input_dims=[8],
                   n_actions=4, mem_size=1000000, batch_size=64)
 
-    filename = 'lunarlander.png'
+    filename = 'lander.png'
     scores = []
     eps_history = []
 
@@ -45,4 +46,3 @@ if __name__ == '__main__':
 
     x = [i+1 for i in range(n_games)]
     #plotLearning(x, scores, eps_history, filename)
-

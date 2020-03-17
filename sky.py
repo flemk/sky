@@ -138,7 +138,8 @@ class Dancer:
 
         #[?] ToDo: Maybe add coordinates of self.ground.target to return-statement?
         #[4]
-        return [view_intersections, border_intersections, self.score, self.border(), done]
+        info = []
+        return [view_intersections, border_intersections, self.border], self.score, done, info
 
     def event(self, action):
         '''
@@ -221,18 +222,55 @@ def intersect(line_a, line_b):
         result = (False, False)
     return result
 
-# ---------------
-# Configurations.
-# ---------------
-pyglet_enable = True
+class Environment:
+    def __init__(self, xi, yi, a_initial=0, v_initial=10, n=1, width=25, height=25):
+        self.xi = xi
+        self.yi = yi
+        self.a_initial = a_initial
+        self.v_initial = v_initial
+        self.n = n = 1
+        self.width = width
+        self.height = height
+        
+        self.dancers = []
+        self.ground = Ground()
 
+        self.reset()
+
+    def reset(self):
+        [self.dancers.append(Dancer(ground=self.ground, 
+                                    x=uniform(self.xi[0], self.xi[1]), 
+                                    y=uniform(self.yi[0], self.yi[1]), 
+                                    width=self.width, 
+                                    height=self.height, 
+                                    v=self.v_initial))
+        for _ in range(self.n)]
+
+        #For the default early-alpha usage, only one dancer is necessary:
+        self.dancer = self.dancers[0]
+
+        observation, _, _, _ = self.dancer.update()
+        return observation
+
+    def step(self, action):
+        observation, reward, done, info = self.dancer.event(action)
+        return observation, reward, done, info
+
+def make():
+    env = Environment([600, 700], [100, 300])
+    return env
+
+''' 
+Above configuration was tested under the following declarations
+'''
+'''
 # ------------------------------------------------
 # Declaring Variables:
 # x/y - Interval for spawning n-Elements of Dancer 
 # with initial velocity v_initial.
 # ------------------------------------------------
-xi = [0, 400]
-yi = [0, 400]
+xi = [600, 700] #max with current ground.border & ground.target: xi = [0, 700]
+yi = [100, 300] #max with current ground.border & ground.target: yi = [0, 400]
 v_initial = 10
 n = 1
 width = 25
@@ -250,3 +288,4 @@ for i in range(n):
                         width=width, 
                         height=height, 
                         v=v_initial))
+'''
