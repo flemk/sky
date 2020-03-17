@@ -12,7 +12,7 @@ class Ground:
         Returning the potential (aka. the score)
         The higher the potential -> the closer the target
         '''
-        return 70 - (x/10)
+        return 7 - (x/100)
 
     def border(self):
         '''
@@ -98,6 +98,7 @@ class Dancer:
 
         border_intersections = []
         view_intersections = []
+        info = ''
         ground_border = self.ground.border()
         ground_target = self.ground.target()
         done = False
@@ -112,14 +113,13 @@ class Dancer:
                     and (g_line[0][1] <= q <= g_line[1][1] or g_line[0][1] >= q >= g_line[1][1])
                 ):
                     #print('line-intersection with border at:', p, q)
-                    self.score -= 100 #ToDo: Make variable
+                    self.score -= 1 #ToDo: Make variable
                     done = True
+                    info = 'crashed'
                     border_intersections.append((p,q))
                 elif (append_point_none):
                     #print('none-line-intersection with border at:', point_none)
                     border_intersections.append(point_none)
-                if (only_one_intersection):
-                    break
             for g_line in ground_target:
                 p, q = intersect(g_line, border)
                 if (    (border[0][0] <= p <= border[1][0] or border[0][0] >= p >= border[1][0])
@@ -128,14 +128,16 @@ class Dancer:
                     and (g_line[0][1] <= q <= g_line[1][1] or g_line[0][1] >= q >= g_line[1][1])
                 ):
                     #print('line-intersection with Target-area at:', p, q)
-                    self.score += 15 #ToDo: Make variable
+                    self.score += 1000 #ToDo: Make variable
                     done = True
+                    info = 'goal'
                     border_intersections.append((p,q))
                 elif (append_point_none):
                     #print('none-line-intersection with Target-area at:', point_none)
                     border_intersections.append(point_none)
-                if (only_one_intersection):
-                    break
+
+            if (only_one_intersection):
+                border_intersections = [next((item for item in border_intersections if item is not point_none), point_none)]
 
         #[2]
         for view in self.view():
@@ -151,8 +153,6 @@ class Dancer:
                 elif (append_point_none):
                     #print('none-view-intersection with border at:', point_none)
                     view_intersections.append(point_none)
-                if (only_one_intersection):
-                    break
             for g_line in ground_target:
                 p, q = intersect(g_line, border)
                 if (    (border[0][0] <= p <= border[1][0] or border[0][0] >= p >= border[1][0])
@@ -165,15 +165,34 @@ class Dancer:
                 elif (append_point_none):
                     #print('none-view-intersection with Target-area at:', point_none)
                     view_intersections.append(point_none)
-                if (only_one_intersection):
-                    break
+
+            if (only_one_intersection):
+                view_intersections = [next((item for item in view_intersections if item is not point_none), point_none)]
 
         #[3]
         self.score += self.potential - self.potential_
+        
+        # ----------------------------------
+        # If the dancer didn't hit the goal,
+        # the score will be reduced.
+        # ----------------------------------
+        if (info != 'goal'):
+            self.score -= 1
+        # ----------------------------------
+        # Aborting, when score gets too low.
+        # ----------------------------------
+        if (self.score <= -50):
+            self.score -= 50
+            info = 'negative aborted'
+            done = True
+        # ----------------------------------------------
+        # Checkpointing: Every 100 steps in x-direction:
+        # dancer will get points
+        # ----------------------------------------------
+        #ToDo
 
         #[?] ToDo: Maybe add coordinates of self.ground.target to observation-return-statement?
         #[4]
-        info = []
         observation = [view_intersections, border_intersections, self.border()]
         observation = np.array(flatten(observation)).flatten()
         return observation, self.score, done, info
@@ -284,7 +303,7 @@ class Environment:
         for _ in range(self.n)]
 
         #For the default early-alpha usage, only one dancer is necessary:
-        self.dancer = self.dancers[0]
+        self.dancer = self.dancers[-1]
 
         observation, _, _, _ = self.dancer.update()
         return observation
