@@ -1,5 +1,7 @@
 from math import copysign
 from random import uniform
+from kostils import flatten
+import numpy as np
 
 class Ground:
     def __init__(self):
@@ -10,7 +12,7 @@ class Ground:
         Returning the potential (aka. the score)
         The higher the potential -> the closer the target
         '''
-        return 700 - x
+        return 70 - (x/10)
 
     def border(self):
         '''
@@ -80,8 +82,20 @@ class Dancer:
         [2] Calculating intersections of dancer.view with ground.border and ground.target
         [3] Calculating reward (self.score)
         [4] Returning Intersections from [1], [2] & [3] with done-flag and coordinates of the dancer
+
+        Additional to [1] & [2]: 
+        1.  If there is no valid intersection a none_point will be added to the return statement, if 
+            append_point_none is set True:
+                append_point_none = True
+        2.  If only_one_intersection is set True, only one intersection per line will be allowed.
+            if:
+                only_one_intersection = True
         '''
         #Returning intersections of border, intersections of Sichtlinien, x/y-coordinates
+        append_point_none = True
+        point_none = (False, False)
+        only_one_intersection = True
+
         border_intersections = []
         view_intersections = []
         ground_border = self.ground.border()
@@ -101,6 +115,11 @@ class Dancer:
                     self.score -= 100 #ToDo: Make variable
                     done = True
                     border_intersections.append((p,q))
+                elif (append_point_none):
+                    #print('none-line-intersection with border at:', point_none)
+                    border_intersections.append(point_none)
+                if (only_one_intersection):
+                    break
             for g_line in ground_target:
                 p, q = intersect(g_line, border)
                 if (    (border[0][0] <= p <= border[1][0] or border[0][0] >= p >= border[1][0])
@@ -109,8 +128,14 @@ class Dancer:
                     and (g_line[0][1] <= q <= g_line[1][1] or g_line[0][1] >= q >= g_line[1][1])
                 ):
                     #print('line-intersection with Target-area at:', p, q)
-                    self.score += 100 #ToDo: Make variable
+                    self.score += 15 #ToDo: Make variable
                     done = True
+                    border_intersections.append((p,q))
+                elif (append_point_none):
+                    #print('none-line-intersection with Target-area at:', point_none)
+                    border_intersections.append(point_none)
+                if (only_one_intersection):
+                    break
 
         #[2]
         for view in self.view():
@@ -123,6 +148,11 @@ class Dancer:
                 ):
                     #print('view-intersection with border at:', p, q)
                     view_intersections.append((p,q))
+                elif (append_point_none):
+                    #print('none-view-intersection with border at:', point_none)
+                    view_intersections.append(point_none)
+                if (only_one_intersection):
+                    break
             for g_line in ground_target:
                 p, q = intersect(g_line, border)
                 if (    (border[0][0] <= p <= border[1][0] or border[0][0] >= p >= border[1][0])
@@ -132,14 +162,21 @@ class Dancer:
                 ):
                     #print('view-intersection with Target-area at:', p, q)
                     view_intersections.append((p,q))
+                elif (append_point_none):
+                    #print('none-view-intersection with Target-area at:', point_none)
+                    view_intersections.append(point_none)
+                if (only_one_intersection):
+                    break
 
         #[3]
         self.score += self.potential - self.potential_
 
-        #[?] ToDo: Maybe add coordinates of self.ground.target to return-statement?
+        #[?] ToDo: Maybe add coordinates of self.ground.target to observation-return-statement?
         #[4]
         info = []
-        return [view_intersections, border_intersections, self.border], self.score, done, info
+        observation = [view_intersections, border_intersections, self.border()]
+        observation = np.array(flatten(observation)).flatten()
+        return observation, self.score, done, info
 
     def event(self, action):
         '''
