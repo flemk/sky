@@ -128,5 +128,3 @@ class Agent(object):
 
     def load_modes(self):
         self.q_eval.load_checkpoint()
-
-print('dqn included')

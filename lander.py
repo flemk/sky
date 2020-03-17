@@ -9,7 +9,7 @@ if __name__ == '__main__':
     lr = 0.0005
     n_games = 100
     #ToDo: input_dims
-    agent = Agent(gamma=0.99, epsilon=1.0, lr=lr, input_dims=[8],
+    agent = Agent(gamma=0.99, epsilon=1.0, lr=lr, input_dims=[3],
                   n_actions=4, mem_size=1000000, batch_size=64)
 
     filename = 'lander.png'
@@ -34,6 +34,7 @@ if __name__ == '__main__':
             one game: ending, when done=True
             '''
             action = agent.choose_action(observation)
+            print(action)
             observation_, reward, done, info = env.step(action)
             score += reward
             agent.store_transition(observation, action, reward, observation_,
