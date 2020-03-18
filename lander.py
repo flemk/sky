@@ -2,6 +2,7 @@ import numpy as np
 from dqn import Agent
 import sky
 #from utils import plotLearning
+import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
     env = sky.make()
@@ -9,9 +10,10 @@ if __name__ == '__main__':
     lr = 0.0005
     n_games = 500
     #ToDo: input_dims
-    agent = Agent(gamma=0.99, epsilon=1.0, lr=lr, input_dims=[20],
-                  n_actions=4, mem_size=1000000, batch_size=64)
+    agent = Agent(gamma=0.99, epsilon=1.0, lr=lr, input_dims=[34],
+                  n_actions=5, mem_size=1000000, batch_size=64)
 
+    agent.load_modes()
     filename = 'lander.png'
     scores = []
     eps_history = []
@@ -30,6 +32,7 @@ if __name__ == '__main__':
         observation = env.reset()
         #print('observation:', observation)
         score = 0
+        t = 0
         while not done:
             '''
             one game: ending, when done=True
@@ -44,6 +47,7 @@ if __name__ == '__main__':
                                    int(done))
             observation = observation_
             agent.learn()
+
         print('info:', info)
 
         scores.append(score)
@@ -51,3 +55,7 @@ if __name__ == '__main__':
 
     x = [i+1 for i in range(n_games)]
     #plotLearning(x, scores, eps_history, filename)
+    plt.plot(x, scores)
+    plt.plot(x, eps_history)
+    plt.savefig(filename)
+    agent.save_models()

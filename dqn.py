@@ -4,7 +4,7 @@ import numpy as np
 
 class DeepQNetwork(object):
     def __init__(self, lr, n_actions, name, input_dims,
-                 fc1_dims=256, fc2_dims=256, chkpt_dir='tmp/dqn'):
+                 fc1_dims=256, fc2_dims=256, chkpt_dir='./'):
         self.lr = lr
         self.n_actions = n_actions
         self.name = name
@@ -47,7 +47,7 @@ class DeepQNetwork(object):
 
 class Agent(object):
     def __init__(self, lr, gamma, mem_size, n_actions, epsilon, batch_size,
-                 input_dims, epsilon_dec=0.996, epsilon_end=0.01, q_dir='tmp/q'):
+                 input_dims, epsilon_dec=0.996, epsilon_end=0.01, q_dir='./'):
         self.action_space = [i for i in range(n_actions)]
         self.n_actions = n_actions
         self.gamma = gamma

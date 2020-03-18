@@ -1,6 +1,6 @@
 from math import copysign
 from random import uniform
-from kostils import flatten
+from kostils import flatten, intersect
 import numpy as np
 
 class Ground:
@@ -19,16 +19,19 @@ class Ground:
         Returning the borders of the ground-plane
         Intersecting with these lead to done=True, and the task is failed
         '''
-        border = [[(100, 400), (700, 300)],
+        '''border = [[(100, 400), (700, 300)],
                   [(700, 300), (650, 000)],
                   [(650, 000), (50, 100)],
-        
+                  
                   [(300, 350), (310, 350)], #obstacles
                   [(300, 300), (310, 300)], 
                   [(300, 250), (310, 250)],
                   [(300, 200), (310, 200)],
                   [(300, 150), (310, 150)],
-                  [(300, 100), (310, 100)]]
+                  [(300, 100), (310, 100)]]]'''
+        border = [[(100, 400), (700, 300)],
+                  [(700, 300), (650, 000)],
+                  [(650, 000), (50, 100)]]
 
         return border
 
@@ -91,19 +94,41 @@ class Dancer:
             if:
                 only_one_intersection = True
         '''
-        #Returning intersections of border, intersections of Sichtlinien, x/y-coordinates
+        #[?] ToDo: Maybe add coordinates of self.ground.target to observation-return-statement?
+
+        # --------------------------------------
+        # Configurations
+        # Determine the output of this function.
+        # --------------------------------------
+        # append_point_none
+        # Determines wheter point_none should be appended to output-array,
+        # if there is no valid intersection, or not.
         append_point_none = True
         point_none = (False, False)
-        only_one_intersection = True
+        # only_one_intersection:
+        # Allows only one intersection per border. If there is no valid intersection,
+        # point_none will be appended. Works only in combination with append_point_none = True
+        only_one_intersection = True 
 
-        border_intersections = []
-        view_intersections = []
+        # ------------------------
+        # Pre-Declaring variables.
+        # ------------------------
+        if (only_one_intersection):
+            border_intersections = [[], []] # *[0] means all (invalid ones too!) intresections
+            view_intersections = [[], []]   # *[1] means only one intersection per dancer.border -> will be in observation
+        else:
+            border_intersections = []
+            view_intersections = []
         info = ''
         ground_border = self.ground.border()
         ground_target = self.ground.target()
         done = False
 
-        #[1]
+        # [1] -----------------------------------------------
+        # Calculating intersections of dancer.border with 
+        # ground.border and ground.target and determinig 
+        # wether Dancer is in target-area or not (done-flag).
+        # ---------------------------------------------------
         for border in self.border():
             for g_line in ground_border:
                 p, q = intersect(g_line, border)
@@ -113,13 +138,13 @@ class Dancer:
                     and (g_line[0][1] <= q <= g_line[1][1] or g_line[0][1] >= q >= g_line[1][1])
                 ):
                     #print('line-intersection with border at:', p, q)
-                    self.score -= 1 #ToDo: Make variable
+                    self.score -= 10 #ToDo: Make variable
                     done = True
                     info = 'crashed'
-                    border_intersections.append((p,q))
+                    border_intersections[0].append((p,q)) if only_one_intersection else border_intersections.append((p,q))
                 elif (append_point_none):
                     #print('none-line-intersection with border at:', point_none)
-                    border_intersections.append(point_none)
+                    border_intersections[0].append(point_none) if only_one_intersection else border_intersections.append(point_none)
             for g_line in ground_target:
                 p, q = intersect(g_line, border)
                 if (    (border[0][0] <= p <= border[1][0] or border[0][0] >= p >= border[1][0])
@@ -131,15 +156,23 @@ class Dancer:
                     self.score += 1000 #ToDo: Make variable
                     done = True
                     info = 'goal'
-                    border_intersections.append((p,q))
+                    border_intersections[0].append((p,q)) if only_one_intersection else border_intersections.append((p,q))
                 elif (append_point_none):
                     #print('none-line-intersection with Target-area at:', point_none)
-                    border_intersections.append(point_none)
+                    border_intersections[0].append(point_none)
 
             if (only_one_intersection):
-                border_intersections = [next((item for item in border_intersections if item is not point_none), point_none)]
+                border_intersections[1].append(
+                    [next((item for item in border_intersections[0] if item is not point_none), point_none)])
+                border_intersections[0] = []
 
-        #[2]
+            if (done):
+                break
+
+        # [2] ------------------------------------
+        # Calculating intersections of dancer.view 
+        # with ground.border and ground.target.
+        # ----------------------------------------
         for view in self.view():
             for g_line in ground_border:
                 p, q = intersect(g_line, view)
@@ -149,10 +182,10 @@ class Dancer:
                     and (g_line[0][1] <= q <= g_line[1][1] or g_line[0][1] >= q >= g_line[1][1])
                 ):
                     #print('view-intersection with border at:', p, q)
-                    view_intersections.append((p,q))
+                    view_intersections[0].append((p,q)) if only_one_intersection else view_intersections.append((p,q))
                 elif (append_point_none):
                     #print('none-view-intersection with border at:', point_none)
-                    view_intersections.append(point_none)
+                    view_intersections[0].append(point_none) if only_one_intersection else view_intersections.append(point_none)
             for g_line in ground_target:
                 p, q = intersect(g_line, border)
                 if (    (border[0][0] <= p <= border[1][0] or border[0][0] >= p >= border[1][0])
@@ -161,41 +194,51 @@ class Dancer:
                     and (g_line[0][1] <= q <= g_line[1][1] or g_line[0][1] >= q >= g_line[1][1])
                 ):
                     #print('view-intersection with Target-area at:', p, q)
-                    view_intersections.append((p,q))
+                    view_intersections[0].append((p,q)) if only_one_intersection else view_intersections.append((p,q))
                 elif (append_point_none):
                     #print('none-view-intersection with Target-area at:', point_none)
-                    view_intersections.append(point_none)
+                    view_intersections[0].append(point_none) if only_one_intersection else view_intersections.append(point_none)
 
             if (only_one_intersection):
-                view_intersections = [next((item for item in view_intersections if item is not point_none), point_none)]
+                view_intersections[1].append(
+                    [next((item for item in view_intersections[0] if item is not point_none), point_none)])
+                view_intersections[0] = []
 
-        #[3]
-        self.score += self.potential - self.potential_
+        # [3] ---------------------------------------------------
+        # Calculating reward (self.score) by multiple parameters.
+        # -------------------------------------------------------
+        
+        # ---------------------------------
+        # From potential calculated reward:
+        #self.score += self.potential - self.potential_
         
         # ----------------------------------
         # If the dancer didn't hit the goal,
-        # the score will be reduced.
-        # ----------------------------------
-        if (info != 'goal'):
-            self.score -= 1
-        # ----------------------------------
-        # Aborting, when score gets too low.
-        # ----------------------------------
-        if (self.score <= -50):
-            self.score -= 50
-            info = 'negative aborted'
-            done = True
-        # ----------------------------------------------
-        # Checkpointing: Every 100 steps in x-direction:
-        # dancer will get points
-        # ----------------------------------------------
-        #ToDo
+        # the score will be reduced:
+        #if (info != 'goal'):
+        #    self.score -= 1
 
-        #[?] ToDo: Maybe add coordinates of self.ground.target to observation-return-statement?
-        #[4]
-        observation = [view_intersections, border_intersections, self.border()]
+        # ------------------------------------
+        # Aborting, when score gets below -50:
+        if (self.score <= -50):
+            self.score -= 5
+            info = 'negative_aborted'
+            done = True
+
+        reward = self.score
+        self.score = 0
+
+        # [4] ------------------------------------------------------------------------------------
+        # Returning Intersections from [1], [2] & [3] with done-flag and coordinates of the dancer
+        # 1. Configuration for use with one-dimensional intersection arrays (only_one_intersection = False):
+        #    observation = [view_intersections, border_intersections, self.border()]
+        # 2. Configuration for use with only_one_intersection = True:
+        #    observation = [view_intersections[1], border_intersections[1], self.border()]
+        observation = [view_intersections[1], border_intersections[1], self.border()] if \
+            only_one_intersection else [view_intersections, border_intersections, self.border()]
         observation = np.array(flatten(observation)).flatten()
-        return observation, self.score, done, info
+
+        return observation, reward, done, info
 
     def event(self, action):
         '''
@@ -213,80 +256,42 @@ class Dancer:
         elif (action == 2):
             #LEFT
             self.x -= self.v
+            # Pretesting checkpoint-lines:
+            #self.score += 0.5
         elif (action == 3):
             #RIGHT
             self.x += self.v
+            # Pretesting checkpoint-lines:
+            #self.score -= 1
+        elif (action == 4):
+            #NOP
+            # score will be reduced if agent does "nothing"
+            self.score -= 1
+            pass
+        elif (action == 5):
+            #TURN R
+            pass
+        elif (action == 6):
+            #TURN L
+            pass
         else:
             pass
-
+            
         self.potential = self.ground.potential(self.x, self.y)
 
         return self.update()
 
-def intersect(line_a, line_b):
-    '''
-    Returns the intersection of two infinite lines,
-    each difined by two points.
-    
-    line_a: static
-    line_b: relative
-    '''
-    #Vertical flags
-    v_f_a, v_f_b = False, False
-    m_a, m_b = False, False
-    
-    dya = line_a[1][1]-line_a[0][1]    
-    dxa = line_a[1][0]-line_a[0][0]
-    if (dxa == 0):
-        v_f_a = line_a[0][0]
-    else:
-        m_a = dya/dxa
-    c_a = line_a[0][1]
-    
-    dyb = line_b[1][1]-line_b[0][1]
-    dxb = line_b[1][0]-line_b[0][0]
-    if (dxb == 0):
-        v_f_b = line_b[0][0]
-    else:
-        m_b = dyb/dxb
-    c_b = line_b[0][1]
-
-    if (dxb == 0 or dyb == 0):
-        '''
-        Case distinction between m_b == 0 and m_b != 0
-        Two different forms of calculation
-        
-        ToDo: below calculation can be moved inside this if-clause
-        '''
-        a = lambda x: m_a * x + c_a
-        b = lambda x: m_b * x + c_b
-    else:
-        a = lambda x: m_a * (x - line_a[0][0]) + c_a
-        b = lambda x: m_b * (x - line_b[0][0]) + c_b
-        o = (-c_a + line_a[0][0] * m_a + c_b - line_b[0][0] * m_b)/(m_a - m_b)
-        result = (o, b(o))
-        return result
-        
-    if (v_f_b):
-        result = (v_f_b, a(v_f_b - line_a[0][0]))
-    elif (v_f_a):
-        result = (v_f_a, b(v_f_a))
-    elif (m_a != m_b):
-        o = ((c_b - c_a)/(m_a - m_b))
-        result = (o + line_a[0][0], b(o))
-    else:
-        result = (False, False)
-    return result
-
 class Environment:
-    def __init__(self, xi, yi, a_initial=0, v_initial=10, n=1, width=25, height=25):
+    def __init__(self, xi, yi, a_initial=0, v_initial=10, n=1, width=25, height=25, random=True):
+        #v_initial should be lower than the width and height
         self.xi = xi
         self.yi = yi
         self.a_initial = a_initial
         self.v_initial = v_initial
-        self.n = n = 1
         self.width = width
         self.height = height
+        self.n = n = 1
+        self.random = random
         
         self.dancers = []
         self.ground = Ground()
@@ -295,8 +300,8 @@ class Environment:
 
     def reset(self):
         [self.dancers.append(Dancer(ground=self.ground, 
-                                    x=uniform(self.xi[0], self.xi[1]), 
-                                    y=uniform(self.yi[0], self.yi[1]), 
+                                    x=uniform(self.xi[0], self.xi[1]) if self.random else self.xi, 
+                                    y=uniform(self.yi[0], self.yi[1]) if self.random else self.yi, 
                                     width=self.width, 
                                     height=self.height, 
                                     v=self.v_initial))
@@ -313,7 +318,10 @@ class Environment:
         return observation, reward, done, info
 
 def make():
-    env = Environment([600, 700], [100, 300])
+    # Random Configuration:
+    # env = Environment([600, 700], [100, 300])
+    # Fixed-Starting-Point Configuration:
+    env = Environment(650, 188, random=False, v_initial=30)
     return env
 
 ''' 
