@@ -1,7 +1,6 @@
 import numpy as np
 from dqn import Agent
 import sky
-#from utils import plotLearning
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
@@ -30,18 +29,13 @@ if __name__ == '__main__':
             print('episode:', i, '| score:', score)
 
         observation = env.reset()
-        #print('observation:', observation)
         score = 0
-        t = 0
         while not done:
             '''
             one game: ending, when done=True
             '''
             action = agent.choose_action(observation)
-            #print('action:', action)
             observation_, reward, done, info = env.step(action)
-            #print('observation_:', observation_)
-            #print('done:', done)
             score += reward
             agent.store_transition(observation, action, reward, observation_,
                                    int(done))
@@ -54,7 +48,7 @@ if __name__ == '__main__':
         eps_history.append(agent.epsilon)
 
     x = [i+1 for i in range(n_games)]
-    #plotLearning(x, scores, eps_history, filename)
+
     plt.plot(x, scores)
     plt.plot(x, eps_history)
     plt.savefig(filename)

@@ -256,13 +256,9 @@ class Dancer:
         elif (action == 2):
             #LEFT
             self.x -= self.v
-            # Pretesting checkpoint-lines:
-            #self.score += 0.5
         elif (action == 3):
             #RIGHT
             self.x += self.v
-            # Pretesting checkpoint-lines:
-            #self.score -= 1
         elif (action == 4):
             #NOP
             # score will be reduced if agent does "nothing"

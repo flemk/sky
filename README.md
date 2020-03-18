@@ -1,5 +1,12 @@
 Have a look at: blog.kostelezky.com
 
+Software concept
+
+1. Environment is classified in sky.py
+2. Deep Q-Network is classified in dqn.py
+3. lander.py is the executable. In it, the actual processing takes part
+4. kostils.py is a custom utility-library
+
 Introduction
 
 As I had a coffee-break with a Friend of mine (cheers to Andi), we began to talk how it would be possible to simulate a human queue at ski-lifts. Those of you, who are familiar with skiing may know already what point I'm trying to make.
