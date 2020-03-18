@@ -12,7 +12,7 @@ if __name__ == '__main__':
     agent = Agent(gamma=0.99, epsilon=1.0, lr=lr, input_dims=[34],
                   n_actions=5, mem_size=1000000, batch_size=64)
 
-    agent.load_modes()
+    #agent.load_modes()
     filename = 'lander.png'
     scores = []
     eps_history = []
