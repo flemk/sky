@@ -137,7 +137,8 @@ class Dancer:
                     and (g_line[0][1] <= q <= g_line[1][1] or g_line[0][1] >= q >= g_line[1][1])
                 ):
                     #print('line-intersection with border at:', p, q)
-                    self.reward -= 10 #ToDo: Make variable
+                    #self.reward -= 10 #ToDo: Make variable
+                    self.reward -= abs(self.reward)
                     done = True
                     info = 'crashed'
                     border_intersections[0].append((p,q)) if only_one_intersection else border_intersections.append((p,q))
@@ -211,7 +212,7 @@ class Dancer:
         
         # ---------------------------------
         # From potential calculated reward:
-        self.reward += self.potential - self.potential_
+        #self.reward += self.potential - self.potential_
         
         # ----------------------------------
         # If the dancer didn't hit the goal,
@@ -227,12 +228,14 @@ class Dancer:
         #    info = 'score_negative_aborted'
         # -------------------------------------
         # Aborting, when reward gets below -50:
-        if (self.reward <= -50):
-            self.reward -= 5
-            done = True
-            info = 'reward_negative_aborted'
+        #if (self.reward <= -50):
+        #    self.reward -= 5
+        #    done = True
+        #    info = 'reward_negative_aborted'
 
+        self.reward -= 1
         self.score += self.reward
+
         reward = self.reward
         self.reward = 0
 
@@ -259,14 +262,14 @@ class Dancer:
             #UP
             self.y += self.v
         elif (action == 1):
-            #DOWN
-            self.y -= self.v
-        elif (action == 2):
-            #LEFT
-            self.x -= self.v
-        elif (action == 3):
             #RIGHT
             self.x += self.v
+        elif (action == 2):
+            #DOWN
+            self.y -= self.v
+        elif (action == 3):
+            #LEFT
+            self.x -= self.v
         elif (action == 4):
             #NOP
             # score will be reduced if agent does "nothing"

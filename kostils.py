@@ -78,3 +78,10 @@ def intersect(line_a, line_b):
     else:
         result = (False, False)
     return result
+
+def sign(x: float) -> bool:
+    '''
+    Returns True if the sign of x is positive
+    ans False if the sign of x is negative.
+    '''
+    return False if (x-abs(x) < 0) else True
