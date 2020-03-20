@@ -5,19 +5,37 @@ import numpy as np
 
 class Ground:
     def __init__(self):
-        pass
-
-    def potential(self, x, y):
         '''
-        Returning the potential (aka. the score)
-        The higher the potential -> the closer the target
+        The initialization does not take yet any arguments.
+
+        Future plans for arguments:
+        - border
+          - reward for hit with border: self.border_reward
+        - target
+          - reward for hit with target: self.target_reward
+        - checkpoints
+          - reward for hit with checkpoint: self.checkpoint_reward
+        - potential-function
+        '''
+        
+        self.border_see_reward = 0
+        self.border_hit_reward = 0
+        self.target_see_reward = 0
+        self.target_hit_reward = 0
+        self.checkpoint_see_reward = 0
+        self.checkpoint_hit_reward = 0
+
+    def potential(self, x: int, y: int) -> float:
+        '''
+        Returning the potential at point (x,y)
         '''
         return 7 - (x/100)
 
     def border(self):
         '''
-        Returning the borders of the ground-plane
-        Intersecting with these lead to done=True, and the task is failed
+        Returning the borders of the ground-plane as array of array, where the first tuple represents the (x,y)
+        starting-point of a line, and the second the end-point.
+        Intersecting with these lines should lead to done=True, and the task is failed.
         '''
         border = [[(100, 400), (700, 300)],
                   [(700, 300), (650, 000)],
@@ -33,10 +51,26 @@ class Ground:
 
         return border
 
+    def obstacles(self):
+        '''
+        Returning the obstacles of the ground-plane as array of array, where the first tuple represents the (x,y)
+        starting-point of a line, and the second the end-point.
+        Intersecting with these lines should lead to done=True, and the task is failed.
+        '''
+        pass
+
+    def checkpoints(self):
+        '''
+        Returning the checkpoints of the ground-plane as array of array, where the first tuple represents the (x,y)
+        starting-point of a line, and the second the end-point.
+        '''
+        pass
+
     def target(self):
         '''
-        Returning the "target-area"
-        Intersecting with these lines lead to done=True, and the task is accomplished
+        Returning the target-area (as line) of the ground-plane as array of array, where the first tuple represents the (x,y)
+        starting-point of a line, and the second the end-point.
+        Intersecting with these lines should lead to done=True, and the task is accomplished.
         '''
         target = [[(50, 100), (100, 400)]]
         #          [(300, 100), (350, 400)]] #checkpoint
@@ -45,13 +79,34 @@ class Ground:
 
 
 class Dancer:
-    def __init__(self, ground, x, y, width, height, v):
+    def __init__(self, ground: Ground, x: int, y: int, width: int, height: int, v_initial: int, a_initial: float):
+        '''
+        Initializes a Dancer with the following properties:
+        - ground: The ground on which the dancer is acting (important for borders and potential)
+        - x, y: coordinates where the dancer is located
+        - width, height: measures of the Dancer
+        - v_initial: initial velocity. Determines the maximum speed of the dancer (pixel per cycle)
+          v_initial should be lower than the width and height: v_initial <= width, height
+        - a_initial: acceleration. Determines how fast the dancer can accelerate
+          [!] Not yet implemented
+
+        Also the following properties are initialized:
+        - score: defines the sum of the rewards the dancer got
+        - reward: will be set 0 after every update(). Defines the reward the Agent will receive
+        - potential, potential_: potential before coordinates were updated in event() and after
+        - potential_history: each cycle the potential will be added to the potential_history array
+
+        Future Plans:
+        - Adding history arrays for score, reward
+        '''
         self.ground = ground
         self.x = int(x)
         self.y = int(y)
-        self.width = width
-        self.height = height
-        self.v = int(v)
+        self.width = int(width)
+        self.height = int(height)
+        self.v = int(v_initial)
+        self.a = a_initial
+
         self.score = 0
         self.reward = 0
         self.potential = 0
@@ -59,7 +114,12 @@ class Dancer:
         self.potential_history = []
 
     def border(self):
-        #Grenzen des Dancers: Wenn intersection mit diesen: Game over
+        '''
+        Returns the border as array of array, of the Dancer, where the first tuple represents the (x,y)
+        starting-point of a line, and the second the end-point.
+
+        These lines are to determine, wether the Dancer is hitting something or not.
+        '''
         border = [[(self.x, self.y), (self.x, self.y + self.height)],
                   [(self.x, self.y + self.height),(self.x + self.width, self.y + self.height)],
                   [(self.x + self.width, self.y), (self.x + self.width, self.y + self.height)],
@@ -68,7 +128,12 @@ class Dancer:
         return border
 
     def view(self):
-        #Sichtlinien: Dienen als input für deep learning
+        '''
+        Returns the view-lines as array of array, of the Dancer, where the first tuple represents the (x,y)
+        starting-point of a line, and the second the end-point.
+
+        These lines act as "what the dancer sees".
+        '''
         view = [[(self.x-100, self.y-50), (self.x, self.y+self.height//2)],
                 [(self.x-100, self.y-25), (self.x, self.y+self.height//2)],
                 [(self.x-100, self.y+self.height//2), (self.x, self.y+self.height//2)],
@@ -79,6 +144,10 @@ class Dancer:
 
     def update(self):
         '''
+        This function is used in Environment.step() and equals it.
+        It returns primarily the observation and the result of the action that was taken by the agent.
+        
+        It basically breaks down to four steps:
         [1] Calculating intersections of dancer.border with ground.border and ground.target
             [1.a] Determinig wether Dancer is in target-area or not (done-flag)
         [2] Calculating intersections of dancer.view with ground.border and ground.target
@@ -93,35 +162,17 @@ class Dancer:
             if:
                 only_one_intersection = True
         '''
-        #[?] ToDo: Maybe add coordinates of self.ground.target to observation-return-statement?
-
-        # --------------------------------------
-        # Configurations
-        # Determine the output of this function.
-        # --------------------------------------
-        # append_point_none
-        # Determines wheter point_none should be appended to output-array,
-        # if there is no valid intersection, or not.
-        append_point_none = True
-        point_none = (False, False)
-        # only_one_intersection:
-        # Allows only one intersection per border. If there is no valid intersection,
-        # point_none will be appended. Works only in combination with append_point_none = True
-        only_one_intersection = True 
 
         # ------------------------
         # Pre-Declaring variables.
         # ------------------------
-        if (only_one_intersection):
-            border_intersections = [[], []] # *[0] means all (invalid ones too!) intresections
-            view_intersections = [[], []]   # *[1] means only one intersection per dancer.border -> will be in observation
-        else:
-            border_intersections = []
-            view_intersections = []
+        border_intersections = [[], []]         # *[0] means all (invalid ones too!) intresections
+        view_intersections = [[], []]           # *[1] means only one intersection per dancer.border -> will be in observation output
         info = ''
+        done = False
+        point_none = (False, False)             # Will be appended, if there is no vail intersection
         ground_border = self.ground.border()
         ground_target = self.ground.target()
-        done = False
 
         # [1] -----------------------------------------------
         # Calculating intersections of dancer.border with 
@@ -136,15 +187,14 @@ class Dancer:
                     and (g_line[0][0] <= p <= g_line[1][0] or g_line[0][0] >= p >= g_line[1][0])
                     and (g_line[0][1] <= q <= g_line[1][1] or g_line[0][1] >= q >= g_line[1][1])
                 ):
-                    #print('line-intersection with border at:', p, q)
-                    #self.reward -= 10 #ToDo: Make variable
-                    self.reward -= abs(self.reward)
-                    done = True
                     info = 'crashed'
-                    border_intersections[0].append((p,q)) if only_one_intersection else border_intersections.append((p,q))
-                elif (append_point_none):
+                    done = True
+                    self.reward += self.ground.border_hit_reward                    
+                    border_intersections[0].append((p,q))
+                    #print('line-intersection with border at:', p, q)
+                else:
+                    border_intersections[0].append(point_none)
                     #print('none-line-intersection with border at:', point_none)
-                    border_intersections[0].append(point_none) if only_one_intersection else border_intersections.append(point_none)
             for g_line in ground_target:
                 p, q = intersect(g_line, border)
                 if (    (border[0][0] <= p <= border[1][0] or border[0][0] >= p >= border[1][0])
@@ -152,22 +202,22 @@ class Dancer:
                     and (g_line[0][0] <= p <= g_line[1][0] or g_line[0][0] >= p >= g_line[1][0])
                     and (g_line[0][1] <= q <= g_line[1][1] or g_line[0][1] >= q >= g_line[1][1])
                 ):
-                    #print('line-intersection with Target-area at:', p, q)
-                    self.reward += 50 #ToDo: Make variable
-                    #Due to checkpoint (second goal), the following line was changed from "done = True" to:
-                    done = True if self.x < 100 else False
                     info = 'goal'
-                    border_intersections[0].append((p,q)) if only_one_intersection else border_intersections.append((p,q))
-                elif (append_point_none):
-                    #print('none-line-intersection with Target-area at:', point_none)
+                    done = True if self.x < 100 else False
+                    self.reward += self.ground.target_hit_reward
+                    border_intersections[0].append((p,q))
+                    #print('line-intersection with Target-area at:', p, q)
+                else:
                     border_intersections[0].append(point_none)
+                    #print('none-line-intersection with Target-area at:', point_none)
 
-            if (only_one_intersection):
-                border_intersections[1].append(
-                    [next((item for item in border_intersections[0] if item is not point_none), point_none)])
-                border_intersections[0] = []
+            # Only one (if available valid, else point_none) intersection will be appended to output array:
+            border_intersections[1].append(
+                [next((item for item in border_intersections[0] if item is not point_none), point_none)])
+            border_intersections[0] = []
 
             if (done):
+                # If a border was hit: game over
                 break
 
         # [2] ------------------------------------
@@ -182,12 +232,12 @@ class Dancer:
                     and (g_line[0][0] <= p <= g_line[1][0] or g_line[0][0] >= p >= g_line[1][0])
                     and (g_line[0][1] <= q <= g_line[1][1] or g_line[0][1] >= q >= g_line[1][1])
                 ):
+                    self.reward += self.ground.border_see_reward
+                    view_intersections[0].append((p,q))
                     #print('view-intersection with border at:', p, q)
-                    view_intersections[0].append((p,q)) if only_one_intersection else view_intersections.append((p,q))
-                elif (append_point_none):
+                else:
+                    view_intersections[0].append(point_none)
                     #print('none-view-intersection with border at:', point_none)
-                    view_intersections[0].append(point_none) if only_one_intersection else view_intersections.append(point_none)
-            ''' [!] The observation shall not contain view-intersection with the target.
             for g_line in ground_target:
                 p, q = intersect(g_line, border)
                 if (    (border[0][0] <= p <= border[1][0] or border[0][0] >= p >= border[1][0])
@@ -195,30 +245,25 @@ class Dancer:
                     and (g_line[0][0] <= p <= g_line[1][0] or g_line[0][0] >= p >= g_line[1][0])
                     and (g_line[0][1] <= q <= g_line[1][1] or g_line[0][1] >= q >= g_line[1][1])
                 ):
+                    self.reward += self.ground.target_see_reward
+                    view_intersections[0].append((p,q))
                     #print('view-intersection with Target-area at:', p, q)
-                    view_intersections[0].append((p,q)) if only_one_intersection else view_intersections.append((p,q))
-                elif (append_point_none):
+                else:
+                    view_intersections[0].append(point_none)
                     #print('none-view-intersection with Target-area at:', point_none)
-                    view_intersections[0].append(point_none) if only_one_intersection else view_intersections.append(point_none)
-            '''
-            if (only_one_intersection):
-                view_intersections[1].append(
-                    [next((item for item in view_intersections[0] if item is not point_none), point_none)])
-                view_intersections[0] = []
+
+            # Only one (if available valid, else point_none) intersection will be appended to output array:
+            view_intersections[1].append(
+                [next((item for item in view_intersections[0] if item is not point_none), point_none)])
+            view_intersections[0] = []
 
         # [3] ----------------------------------------------------
         # Calculating reward (self.reward) by multiple parameters.
         # --------------------------------------------------------
         
-        # ---------------------------------
+        # -------------------------------------
         # From potential calculated reward:
         #self.reward += self.potential - self.potential_
-        
-        # ----------------------------------
-        # If the dancer didn't hit the goal,
-        # the score will be reduced:
-        #if (info != 'goal'):
-        #    self.reward -= 1
 
         # ------------------------------------
         # Aborting, when score gets below -50:
@@ -232,54 +277,56 @@ class Dancer:
         #    self.reward -= 5
         #    done = True
         #    info = 'reward_negative_aborted'
-
+        # -------------------------------------
+        # Each cycle reward get reduced by 1:
         self.reward -= 1
+
+        # Adding reward to score
         self.score += self.reward
 
+        # Passing reward and resetting it
         reward = self.reward
         self.reward = 0
 
-        # [4] ------------------------------------------------------------------------------------
-        # Returning Intersections from [1], [2] & [3] with done-flag and coordinates of the dancer
-        # 1. Configuration for use with one-dimensional intersection arrays (only_one_intersection = False):
-        #    observation = [view_intersections, border_intersections, self.border()]
-        # 2. Configuration for use with only_one_intersection = True:
-        #    observation = [view_intersections[1], border_intersections[1], self.border()]
-        observation = [view_intersections[1], border_intersections[1], self.border()] if \
-            only_one_intersection else [view_intersections, border_intersections, self.border()]
+        # [4] ---------------------------------
+        # Return the observation with done flag
+        # and additional parameters:
+        observation = [view_intersections[1],self.border()]
         observation = np.array(flatten(observation)).flatten()
 
         return observation, reward, done, info
 
-    def event(self, action):
+    def event(self, action: int) -> tuple:
         '''
-        Applying the action and updation the dancer
+        Applying the action choosen by the dqn and updation the dancer.
+
+        Turning (action == (5||6)) is not yet implemented.
         '''
         self.potential_ = self.ground.potential(self.x, self.y)
         self.potential_history.append(self.potential_)
 
         if (action == 0):
-            #UP
+            #Moving up
             self.y += self.v
         elif (action == 1):
-            #RIGHT
+            #Moving right
             self.x += self.v
         elif (action == 2):
-            #DOWN
+            #Moving down
             self.y -= self.v
         elif (action == 3):
-            #LEFT
+            #Moving left
             self.x -= self.v
         elif (action == 4):
-            #NOP
+            #No operation
             # score will be reduced if agent does "nothing"
-            self.score -= 1
+            #self.reward -= 1
             pass
         elif (action == 5):
-            #TURN R
+            #Turning right
             pass
         elif (action == 6):
-            #TURN L
+            #Turning left
             pass
         else:
             pass
@@ -289,8 +336,20 @@ class Dancer:
         return self.update()
 
 class Environment:
+    '''
+    This class "Environment" acts as interface between training-programm and Agent-Acting-definition.
+    Aka: This class returns returns the observation.
+
+    It is: Agent (in the dqn) equals to the class Dancer (sky).
+    '''
     def __init__(self, xi, yi, a_initial=0, v_initial=10, n=1, width=25, height=25, random=True):
-        #v_initial should be lower than the width and height
+        '''
+        Creating an Environment:
+        - if random is set True: xi and yi must be a two dimensional touple, representing the starting-area, where the Agent will start.
+          Else if random is set False: xi and yi need to be integers, representing a fixed starting point.
+        - n-Elements will be spawned, but only the last one is used for acting. (early alpha)
+        - a_initial, v_initial, width, height will be passed as they are to the Agent.
+        '''
         self.xi = xi
         self.yi = yi
         self.a_initial = a_initial
@@ -305,13 +364,18 @@ class Environment:
 
         self.reset()
 
-    def reset(self):
+    def reset(self) -> tuple:
+        '''
+        This function resets the Dancer:
+        Creates a new one, defines it as active Agent, and passes its observation as result.
+        '''
         [self.dancers.append(Dancer(ground=self.ground, 
                                     x=uniform(self.xi[0], self.xi[1]) if self.random else self.xi, 
                                     y=uniform(self.yi[0], self.yi[1]) if self.random else self.yi, 
                                     width=self.width, 
                                     height=self.height, 
-                                    v=self.v_initial))
+                                    v_initial=self.v_initial,
+                                    a_initial=self.a_initial))
         for _ in range(self.n)]
 
         #For the default early-alpha usage, only one dancer is necessary:
@@ -320,43 +384,24 @@ class Environment:
         observation, _, _, _ = self.dancer.update()
         return observation
 
-    def step(self, action):
+    def step(self, action: int) -> tuple:
+        '''
+        The next action choosen will be evaluated by the Dancer and its outputs will be passes as result.
+        action needs to be an integer.
+        '''
         observation, reward, done, info = self.dancer.event(action)
         return observation, reward, done, info
 
-def make():
-    # Random Configuration:
-    # env = Environment([600, 700], [100, 300])
-    # Fixed-Starting-Point Configuration:
-    env = Environment(650, 188, random=False, v_initial=25)
+def make(xi=650, yi=188, random=False, v_initial=25, a_initial=0, width=25, height=25):
+    '''
+    This function passes by the parameters created environment.
+    xi, yi, a_initial=0, v_initial=10, n=1, width=25, height=25, random=True
+    
+    [Ex.1] Example for a random configuration:
+    xi = [600, 700], yi = [100, 300]
+
+    [Ex.2] Example for a fixed starting-point configuration:
+    xi = 650, yi = 188, random = False
+    '''
+    env = Environment(xi, yi, random, v_initial, width, height)
     return env
-
-''' 
-Above configuration was tested under the following declarations
-'''
-'''
-# ------------------------------------------------
-# Declaring Variables:
-# x/y - Interval for spawning n-Elements of Dancer 
-# with initial velocity v_initial.
-# ------------------------------------------------
-xi = [600, 700] #max with current ground.border & ground.target: xi = [0, 700]
-yi = [100, 300] #max with current ground.border & ground.target: yi = [0, 400]
-v_initial = 10
-n = 1
-width = 25
-height = 25
-
-# ------------------------------------------------
-# Creating n-dancers on different starting-points.
-# ------------------------------------------------
-dancers = []
-ground = Ground()
-for i in range(n):
-    dancers.append(Dancer(ground=ground, 
-                        x=uniform(xi[0], xi[1]), 
-                        y=uniform(yi[0], yi[1]), 
-                        width=width, 
-                        height=height, 
-                        v=v_initial))
-'''

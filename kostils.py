@@ -1,6 +1,7 @@
 '''
 custom utils library by Franz Ludwig Kostelezky
 '''
+import math
 
 def flatten(ls: list) -> list:
     """This function returns a flattend list from an inputed nested list.
@@ -85,3 +86,17 @@ def sign(x: float) -> bool:
     ans False if the sign of x is negative.
     '''
     return False if (x-abs(x) < 0) else True
+
+def distance(p: tuple, q: tuple) -> float:
+    '''
+    Returns the distance between two n-multidimensional points.
+    The parameters p and q need to be n-dimensional tuples.
+    '''
+    sum = 0
+    if (len(p) == len(q)):
+        for i in range(len(p)):
+            sum += (p[i] - q[i]) ** 2
+        return math.sqrt(sum)
+    else:
+        raise IndexError('p and q need to have identical dimensions')
+    pass

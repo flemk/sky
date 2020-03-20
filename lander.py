@@ -7,12 +7,12 @@ if __name__ == '__main__':
     env = sky.make()
 
     lr = 0.0005
-    n_games = 500
+    n_games = 10000
     #ToDo: input_dims
-    agent = Agent(gamma=0.99, epsilon=1.0, lr=lr, input_dims=[34],
+    agent = Agent(gamma=0.99, epsilon=1.0, lr=lr, input_dims=[26],
                   n_actions=5, mem_size=1000000, batch_size=64)
 
-    #agent.load_modes()
+    agent.load_modes()
     filename = 'lander.png'
     scores = []
     eps_history = []
