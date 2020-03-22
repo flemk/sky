@@ -5,6 +5,10 @@ import matplotlib.pyplot as plt
 
 '''
 This does something
+
+For [1] Definig the parmeters:
+- Gamma is the value of future reward. It can affect learning quite a bit, and can be a dynamic or static value. If it is equal to one, the agent values future reward JUST AS MUCH as current reward. This means, in ten actions, if an agent does something good this is JUST AS VALUABLE as doing this action directly. So learning doesn't work at that well at high gamma values.
+  Conversely, a gamma of zero will cause the agent to only value immediate rewards, which only works with very detailed reward function
 '''
 
 # [1] Defining the dqn parameters
@@ -21,7 +25,7 @@ load_checkpoint = True
 save_checkpoint = True
 
 # [3] Training parameters
-n_games = 10000
+n_games = 100000
 filename = 'lander.png'
 
 if __name__ == '__main__':
@@ -78,7 +82,7 @@ if __name__ == '__main__':
     color = 'tab:red'
     ax1.set_xlabel('Episode')
     ax1.set_ylabel('score per Episode', color=color)
-    ax1.plot(x, scores, color=color)
+    ax1.scatter(x, scores, color=color, s=2)
     ax1.tick_params(axis='y', labelcolor=color)
 
     # Second axis: epsilon

@@ -73,7 +73,9 @@ class Ground:
         Returning the checkpoints of the ground-plane as array of array, where the first tuple represents the (x,y)
         starting-point of a line, and the second the end-point.
         '''
-        pass
+        checkpoint = [[(300, 100), (350, 400)]]
+        
+        return checkpoint
 
     def target(self):
         '''
@@ -82,7 +84,6 @@ class Ground:
         Intersecting with these lines should lead to done=True, and the task is accomplished.
         '''
         target = [[(50, 100), (100, 400)]]
-        #          [(300, 100), (350, 400)]] #checkpoint
         
         return target
 
