@@ -1,6 +1,6 @@
 from math import copysign
 from random import uniform
-from kostils import flatten, intersect
+from kostils import flatten, intersect, distance
 import numpy as np
 
 class Ground:
@@ -19,11 +19,20 @@ class Ground:
         '''
         
         self.border_see_reward = 0
-        self.border_hit_reward = 0
-        self.target_see_reward = 0
-        self.target_hit_reward = 0
+        self.border_hit_reward = -10
+        self.target_see_reward = 1
+        self.target_hit_reward = 100
         self.checkpoint_see_reward = 0
         self.checkpoint_hit_reward = 0
+        self.cycle_reward = -1
+        self.action_reward = [('up', 0),
+                              ('right', 0), 
+                              ('down', 0), 
+                              ('left', 0), 
+                              ('nop', -1), 
+                              ('t-right', 0), 
+                              ('t-left', 0), 
+                              ('else', 0)]
 
     def potential(self, x: int, y: int) -> float:
         '''
@@ -203,7 +212,7 @@ class Dancer:
                     and (g_line[0][1] <= q <= g_line[1][1] or g_line[0][1] >= q >= g_line[1][1])
                 ):
                     info = 'goal'
-                    done = True if self.x < 100 else False
+                    done = True
                     self.reward += self.ground.target_hit_reward
                     border_intersections[0].append((p,q))
                     #print('line-intersection with Target-area at:', p, q)
@@ -213,7 +222,7 @@ class Dancer:
 
             # Only one (if available valid, else point_none) intersection will be appended to output array:
             border_intersections[1].append(
-                [next((item for item in border_intersections[0] if item is not point_none), point_none)])
+                [next((item for item in border_intersections[0] if item is not point_none), point_none[0])])
             border_intersections[0] = []
 
             if (done):
@@ -233,11 +242,13 @@ class Dancer:
                     and (g_line[0][1] <= q <= g_line[1][1] or g_line[0][1] >= q >= g_line[1][1])
                 ):
                     self.reward += self.ground.border_see_reward
-                    view_intersections[0].append((p,q))
+                    #view_intersections[0].append((p,q))
+                    view_intersections[0].append(distance((p,q), view[1])) #passing distance instead of coordinates
                     #print('view-intersection with border at:', p, q)
                 else:
                     view_intersections[0].append(point_none)
                     #print('none-view-intersection with border at:', point_none)
+            ''' in this mockup, view-intersections will be passed seperatly
             for g_line in ground_target:
                 p, q = intersect(g_line, border)
                 if (    (border[0][0] <= p <= border[1][0] or border[0][0] >= p >= border[1][0])
@@ -246,7 +257,30 @@ class Dancer:
                     and (g_line[0][1] <= q <= g_line[1][1] or g_line[0][1] >= q >= g_line[1][1])
                 ):
                     self.reward += self.ground.target_see_reward
-                    view_intersections[0].append((p,q))
+                    #view_intersections[0].append((p,q))
+                    view_intersections[0].append(distance((p,q), view[1])) #passing distance instead of coordinates
+                    #print('view-intersection with Target-area at:', p, q)
+                else:
+                    view_intersections[0].append(point_none)
+                    #print('none-view-intersection with Target-area at:', point_none)'''
+
+            # Only one (if available valid, else point_none) intersection will be appended to output array:
+            view_intersections[1].append(
+                [next((item for item in view_intersections[0] if item is not point_none), point_none[0])])
+            view_intersections[0] = []
+
+        ''' in this mockup, view-intersections will be passed seperatly'''
+        for view in self.view():
+            for g_line in ground_target:
+                p, q = intersect(g_line, border)
+                if (    (border[0][0] <= p <= border[1][0] or border[0][0] >= p >= border[1][0])
+                    and (border[0][1] <= q <= border[1][1] or border[0][1] >= q >= border[1][1])
+                    and (g_line[0][0] <= p <= g_line[1][0] or g_line[0][0] >= p >= g_line[1][0])
+                    and (g_line[0][1] <= q <= g_line[1][1] or g_line[0][1] >= q >= g_line[1][1])
+                ):
+                    self.reward += self.ground.target_see_reward
+                    #view_intersections[0].append((p,q))
+                    view_intersections[0].append(distance((p,q), view[1])) #passing distance instead of coordinates
                     #print('view-intersection with Target-area at:', p, q)
                 else:
                     view_intersections[0].append(point_none)
@@ -254,7 +288,7 @@ class Dancer:
 
             # Only one (if available valid, else point_none) intersection will be appended to output array:
             view_intersections[1].append(
-                [next((item for item in view_intersections[0] if item is not point_none), point_none)])
+                [next((item for item in view_intersections[0] if item is not point_none), point_none[0])])
             view_intersections[0] = []
 
         # [3] ----------------------------------------------------
@@ -279,7 +313,7 @@ class Dancer:
         #    info = 'reward_negative_aborted'
         # -------------------------------------
         # Each cycle reward get reduced by 1:
-        self.reward -= 1
+        self.reward += self.ground.cycle_reward
 
         # Adding reward to score
         self.score += self.reward
@@ -291,7 +325,7 @@ class Dancer:
         # [4] ---------------------------------
         # Return the observation with done flag
         # and additional parameters:
-        observation = [view_intersections[1],self.border()]
+        observation = [view_intersections[1], self.x, self.y, self.x + self.width, self.y + self.height]
         observation = np.array(flatten(observation)).flatten()
 
         return observation, reward, done, info
@@ -308,27 +342,33 @@ class Dancer:
         if (action == 0):
             #Moving up
             self.y += self.v
+            self.reward += self.ground.action_reward[action][1]
         elif (action == 1):
             #Moving right
             self.x += self.v
+            self.reward += self.ground.action_reward[action][1]
         elif (action == 2):
             #Moving down
             self.y -= self.v
+            self.reward += self.ground.action_reward[action][1]
         elif (action == 3):
             #Moving left
             self.x -= self.v
+            self.reward += self.ground.action_reward[action][1]
         elif (action == 4):
             #No operation
-            # score will be reduced if agent does "nothing"
-            #self.reward -= 1
+            self.reward += self.ground.action_reward[action][1]
             pass
         elif (action == 5):
             #Turning right
+            self.reward += self.ground.action_reward[action][1]
             pass
         elif (action == 6):
             #Turning left
+            self.reward += self.ground.action_reward[action][1]
             pass
         else:
+            self.reward += self.ground.action_reward[action][1]
             pass
             
         self.potential = self.ground.potential(self.x, self.y)
@@ -356,7 +396,7 @@ class Environment:
         self.v_initial = v_initial
         self.width = width
         self.height = height
-        self.n = n = 1
+        self.n = n
         self.random = random
         
         self.dancers = []
@@ -403,5 +443,5 @@ def make(xi=650, yi=188, random=False, v_initial=25, a_initial=0, width=25, heig
     [Ex.2] Example for a fixed starting-point configuration:
     xi = 650, yi = 188, random = False
     '''
-    env = Environment(xi, yi, random, v_initial, width, height)
+    env = Environment(xi=xi, yi=yi, random=random, v_initial=v_initial, width=width, height=height)
     return env
