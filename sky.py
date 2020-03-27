@@ -38,7 +38,7 @@ class Ground:
         '''
         Returning the potential at point (x,y)
         '''
-        return 7 - (x/100)
+        return -7*((x+200)**2 + 8*(y-200)**2)/10000/113 +1
 
     def border(self):
         '''
@@ -50,12 +50,9 @@ class Ground:
                   [(700, 300), (650, 000)],
                   [(650, 000), (50, 100)],
                   
-                  #[(300, 350), (310, 350)], #obstacles
-                  #[(300, 300), (310, 300)], 
-                  #[(300, 250), (310, 250)],
-                  #[(300, 200), (310, 200)],
-                  #[(300, 150), (310, 150)],
-                  #[(300, 100), (310, 100)]
+                  [(300, 350), (300, 360)], #obstacles
+                  [(300, 250), (300, 260)],
+                  [(300, 150), (300, 160)]
                   ]
 
         return border
@@ -105,9 +102,6 @@ class Dancer:
         - reward: will be set 0 after every update(). Defines the reward the Agent will receive
         - potential, potential_: potential before coordinates were updated in event() and after
         - potential_history: each cycle the potential will be added to the potential_history array
-
-        Future Plans:
-        - Adding history arrays for score, reward
         '''
         self.ground = ground
         self.x = int(x)
@@ -122,6 +116,9 @@ class Dancer:
         self.potential = 0
         self.potential_ = 0
         self.potential_history = []
+        self.xy_history = []
+        self.reward_history = []
+        self.action_history = []
 
     def border(self):
         '''
@@ -144,11 +141,17 @@ class Dancer:
 
         These lines act as "what the dancer sees".
         '''
-        view = [[(self.x-100, self.y-50), (self.x, self.y+self.height//2)],
-                [(self.x-100, self.y-25), (self.x, self.y+self.height//2)],
+        view = [[(self.x-100, self.y-100), (self.x, self.y)],#left side
                 [(self.x-100, self.y+self.height//2), (self.x, self.y+self.height//2)],
-                [(self.x-100, self.y+self.height+25), (self.x, self.y+self.height//2)],
-                [(self.x-100, self.y+self.height+50), (self.x, self.y+self.height//2)]]
+                [(self.x-100, self.y+self.height+100), (self.x, self.y+self.height)],
+
+                [(self.x+self.width//2, self.y-100), (self.x+self.width//2, self.y)],#mid part
+                [(self.x+self.width//2, self.y+self.height+100), (self.x+self.width//2, self.y+self.height)],
+                
+                [(self.x+self.width+100, self.y-100), (self.x+self.width, self.y)],#right side
+                [(self.x+self.width+100, self.y+self.height//2), (self.x+self.width, self.y+self.height//2)],
+                [(self.x+self.width+100, self.y+self.height+100), (self.x+self.width, self.y+self.height)],
+                ]
 
         return view   
 
@@ -249,28 +252,13 @@ class Dancer:
                 else:
                     view_intersections[0].append(point_none)
                     #print('none-view-intersection with border at:', point_none)
-            ''' in this mockup, view-intersections will be passed seperatly
-            for g_line in ground_target:
-                p, q = intersect(g_line, border)
-                if (    (border[0][0] <= p <= border[1][0] or border[0][0] >= p >= border[1][0])
-                    and (border[0][1] <= q <= border[1][1] or border[0][1] >= q >= border[1][1])
-                    and (g_line[0][0] <= p <= g_line[1][0] or g_line[0][0] >= p >= g_line[1][0])
-                    and (g_line[0][1] <= q <= g_line[1][1] or g_line[0][1] >= q >= g_line[1][1])
-                ):
-                    self.reward += self.ground.target_see_reward
-                    #view_intersections[0].append((p,q))
-                    view_intersections[0].append(distance((p,q), view[1])) #passing distance instead of coordinates
-                    #print('view-intersection with Target-area at:', p, q)
-                else:
-                    view_intersections[0].append(point_none)
-                    #print('none-view-intersection with Target-area at:', point_none)'''
 
             # Only one (if available valid, else point_none) intersection will be appended to output array:
             view_intersections[1].append(
                 [next((item for item in view_intersections[0] if item is not point_none), point_none[0])])
             view_intersections[0] = []
 
-        ''' in this mockup, view-intersections will be passed seperatly'''
+        ''' In this version, view-intersections will be passed seperatly'''
         for view in self.view():
             for g_line in ground_target:
                 p, q = intersect(g_line, border)
@@ -298,7 +286,7 @@ class Dancer:
         
         # -------------------------------------
         # From potential calculated reward:
-        #self.reward += self.potential - self.potential_
+        self.reward += self.potential - self.potential_
 
         # ------------------------------------
         # Aborting, when score gets below -50:
@@ -322,6 +310,7 @@ class Dancer:
         # Passing reward and resetting it
         reward = self.reward
         self.reward = 0
+        self.reward_history.append(reward)
 
         # [4] ---------------------------------
         # Return the observation with done flag
@@ -339,6 +328,8 @@ class Dancer:
         '''
         self.potential_ = self.ground.potential(self.x, self.y)
         self.potential_history.append(self.potential_)
+        self.xy_history.append((self.x, self.y))
+        self.action_history.append(action)
 
         if (action == 0):
             #Moving up

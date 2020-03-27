@@ -12,7 +12,7 @@ For [1] Definig the parmeters:
 '''
 
 # [1] Defining the dqn parameters
-imput_dimensions = 14
+imput_dimensions = 20
 n_actions = 5 #aka output
 epsilon = 1.0
 gamma = 0.99
@@ -25,14 +25,17 @@ load_checkpoint = True
 save_checkpoint = True
 
 # [3] Training parameters
-n_games = 100000
+n_games = 250
 filename = 'lander.png'
 
 if __name__ == '__main__':
     scores = []
     eps_history = []
     info_history = []
-    env = sky.make(random=True, xi=(100,650-25), yi=(100,300-25), width=25, height=25)
+    # Random starting-points:
+    env = sky.make(random=True, xi=(301,650-25), yi=(100,300-25), width=25, height=25)
+    # Fixed starting-point:
+    #env = sky.make(xi=550)
     agent = Agent(gamma=gamma, epsilon=epsilon, lr=lr, input_dims=[imput_dimensions],
                   n_actions=n_actions, mem_size=mem_size, batch_size=batch_size)
 

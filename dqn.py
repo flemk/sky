@@ -2,6 +2,10 @@ import os
 import tensorflow as tf
 import numpy as np
 
+'''
+Thanks to Phil's video (https://youtu.be/5fHngyN8Qhw) this deep q-learning-network could be created.
+'''
+
 class DeepQNetwork(object):
     def __init__(self, lr, n_actions, name, input_dims,
                  fc1_dims=256, fc2_dims=256, chkpt_dir='./'):
@@ -121,7 +125,7 @@ class Agent(object):
                                                 self.q_eval.q_target: q_target})
 
             self.epsilon = self.epsilon*self.epsilon_dec if self.epsilon > \
-                           self.epsilon_end else self.epsilon_end
+                           self.epsilon_end else self.epsilon
 
     def save_models(self):
         self.q_eval.save_checkpoint()
