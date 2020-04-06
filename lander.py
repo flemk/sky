@@ -15,9 +15,10 @@ For [1] Definig the parmeters:
 imput_dimensions = 20
 n_actions = 5 #aka output
 epsilon = 1.0
-gamma = 0.99
+epsilon_dec = 0.85
+gamma = 0.5
 lr = 0.0005
-mem_size = 1000000
+mem_size = 2000000
 batch_size = 64
 
 # [2] Load presaved model
@@ -25,19 +26,21 @@ load_checkpoint = True
 save_checkpoint = True
 
 # [3] Training parameters
-n_games = 250
-filename = 'lander.png'
+n_games = 100
+filename = './visualization/lander.png'
 
-if __name__ == '__main__':
+def main():
     scores = []
     eps_history = []
     info_history = []
+
     # Random starting-points:
-    env = sky.make(random=True, xi=(301,650-25), yi=(100,300-25), width=25, height=25)
+    env = sky.make(random=True, xi=(301,650-25), yi=(100,300-25), width=15, height=15, v_initial=14)
     # Fixed starting-point:
     #env = sky.make(xi=550)
+
     agent = Agent(gamma=gamma, epsilon=epsilon, lr=lr, input_dims=[imput_dimensions],
-                  n_actions=n_actions, mem_size=mem_size, batch_size=batch_size)
+                  n_actions=n_actions, mem_size=mem_size, batch_size=batch_size, epsilon_dec=epsilon_dec)
 
     if (load_checkpoint):
         agent.load_modes()
@@ -98,3 +101,8 @@ if __name__ == '__main__':
     # Output
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
     plt.savefig(filename)
+
+    return env
+
+if __name__ == '__main__':
+    main()

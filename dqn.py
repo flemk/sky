@@ -124,7 +124,7 @@ class Agent(object):
                                                 self.q_eval.actions: action_batch,
                                                 self.q_eval.q_target: q_target})
 
-            self.epsilon = self.epsilon*self.epsilon_dec if self.epsilon > \
+            self.epsilon = self.epsilon*self.epsilon_dec if self.epsilon >= \
                            self.epsilon_end else self.epsilon
 
     def save_models(self):

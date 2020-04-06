@@ -38,7 +38,7 @@ class Ground:
         '''
         Returning the potential at point (x,y)
         '''
-        return -7*((x+200)**2 + 8*(y-200)**2)/10000/113 +1
+        return -7*((x+200)**2+8*(y-200)**2)/800000 + (791/80) 
 
     def border(self):
         '''
@@ -309,8 +309,8 @@ class Dancer:
 
         # Passing reward and resetting it
         reward = self.reward
+        self.reward_history.append(self.reward)
         self.reward = 0
-        self.reward_history.append(reward)
 
         # [4] ---------------------------------
         # Return the observation with done flag
@@ -394,7 +394,7 @@ class Environment:
         self.dancers = []
         self.ground = Ground()
 
-        self.reset()
+        #self.reset()
 
     def reset(self) -> tuple:
         '''
